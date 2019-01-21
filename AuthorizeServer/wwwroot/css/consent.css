@@ -1,0 +1,16 @@
+﻿.page-consent .consent-form .consent-scopecheck {
+    display: inline-block;
+    margin-right: 5px;
+}
+.page-consent .consent-form .consent-description {
+    margin-left: 25px;
+}
+.page-consent .consent-form .consent-description label {
+    font-weight: normal;
+}
+.page-consent .consent-form .consent-remember {
+    padding-left: 16px;
+}
+.grants .page-header {
+    margin-bottom: 10px;
+}

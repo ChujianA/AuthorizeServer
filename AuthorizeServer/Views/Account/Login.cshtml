@@ -1,0 +1,85 @@
+﻿@model LoginViewModel
+
+@{
+    ViewData["Title"] = "Login";
+}
+
+
+<h4>登录</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        @if (!ViewContext.ModelState.IsValid)
+        {
+            <strong>
+                Error
+            </strong>
+            <div asp-validation-summary="All" class="danger"></div>
+        }
+        <form asp-action="Login" asp-controller="Account" asp-route-url="@ViewData["url"]">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="UserName" class="control-label">用户名：</label>
+                <input asp-for="UserName" class="form-control" />
+                <span asp-validation-for="UserName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Password" class="control-label">密码：</label>
+                <input asp-for="Password" class="form-control" />
+                <span asp-validation-for="Password" class="text-danger"></span>
+            </div>
+            @if (Model.AllowRememberLogin)
+            {
+                <div class="form-group">
+                    <div class="form-group login-remember">
+                        <label asp-for="@Model.RememberMe">
+                            <input asp-for="@Model.RememberMe">
+                            <strong>记住我</strong>
+                        </label>
+                    </div>
+                </div>
+            }
+
+            <div class="form-group">
+                <input type="submit" value="登陆" class="btn btn-default" />
+                <button class="btn btn-default" name="button" value="cancel">取消</button>
+            </div>
+        </form>
+    </div>
+    @if (Model.ExternalProviders.Any())
+    {
+        <div class="col-md-4">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">其他登录</h3>
+                </div>
+                <div class="panel-body">
+                    <ul class="list-inline">
+                        @foreach (var provider in Model.ExternalProviders)
+                        {
+                            <li>
+                                <a class="btn btn-default" asp-controller="Account"
+                                   asp-action="ExternalLogin"
+                                   asp-route-provider="@provider.AuthenticationScheme"
+                                   asp-route-returnUrl="@ViewData["url"]">
+                                    @provider.DisplayName
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    }
+
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+
+
