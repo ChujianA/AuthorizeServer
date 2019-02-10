@@ -1,0 +1,12 @@
+﻿@model AuthorizeServer.ViewModels.RedirectViewModel
+
+<h1>You are now being returned to the application.</h1>
+<p>Once complete, you may close this tab</p>
+
+<meta http-equiv="refresh" content="0;url=@Model.RedirectUrl" data-url="@Model.RedirectUrl">
+@*
+    For more information on enabling MVC for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
+*@
+<script type="text/javascript">
+    window.location.href = document.querySelector("meta[http-equiv=refresh]").getAttribute("data-url");
+</script>

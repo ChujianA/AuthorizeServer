@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AuthorizeServer", "Authoriz
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataAccess", "DataAccess\DataAccess.csproj", "{8C752B99-9BF7-407E-85FE-59B547C4F7F9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Buiness", "Buiness\Buiness.csproj", "{436866CF-3CDA-4A32-8A3A-2B236C13A152}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Buiness", "Buiness\Buiness.csproj", "{436866CF-3CDA-4A32-8A3A-2B236C13A152}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -1,32 +1,30 @@
-﻿using DataAccess.IRepositorys;
+﻿using AutoMapper;
 using IdentityServer4.EntityFramework.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using AutoMapper;
-using IdModel=IdentityServer4.Models;
-using IdentityServer4.EntityFramework.Entities;
+using IdModel = IdentityServer4.Models;
 
 namespace Buiness.Hepler
 {
     public class ResourcesHelper:IResourcesBll
     {
-        private readonly IIdentityResourcesRepository _identityResourcesRepository;
-        private readonly IApiResourcesRepository _apiResourcesRepository;
+        private readonly IIdentityResourcesBll _identityResources;
+        private readonly IApiResourcesBll _apiResourcesBll;
         private readonly IMapper _iMapper;
-        public ResourcesHelper(IIdentityResourcesRepository identityResourcesRepository, IApiResourcesRepository apiResourcesRepository,IMapper iMapper)
+        public ResourcesHelper(IIdentityResourcesBll identityResources, IApiResourcesBll apiResourcesBll, IMapper iMapper)
         {
-            _identityResourcesRepository = identityResourcesRepository;
-            _apiResourcesRepository = apiResourcesRepository;
+            _identityResources = identityResources;
+            _apiResourcesBll = apiResourcesBll;
             _iMapper = iMapper;
         }
 
         public async Task<IdModel.Resources> FindResourcesByScopeAsync(IEnumerable<string> scopeNames)
         {
-            var identityResources =await _identityResourcesRepository.FindIdentityResourcesByScopeAsync(scopeNames);
-            var apiResources = await _apiResourcesRepository.FindApiResourceByScopeAsync(scopeNames);
+            
+               var identityResources =await _identityResources.FindIdentityResourcesByScopeAsync(scopeNames);
+            var apiResources = await _apiResourcesBll.FindApiResourceByScopeAsync(scopeNames);
             Validate(identityResources, apiResources);
             var apis=new List<IdModel.ApiResource>();
             foreach (var apiResource in apiResources)

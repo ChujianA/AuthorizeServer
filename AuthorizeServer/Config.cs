@@ -80,7 +80,7 @@ namespace AuthorizeServer
             //        ClientSecrets={ new Secret("secret1".Sha256())},
             //        RedirectUris={"http://localhost:5001/account/oAuth2"},
             //        PostLogoutRedirectUris = {},
-            //        AccessTokenType = AccessTokenType.Jwt,
+             //       AccessTokenType = AccessTokenType.Jwt,
             //        AllowedScopes=new List<string>{"Home"},
                     
             //    },
@@ -106,6 +106,7 @@ namespace AuthorizeServer
                     ClientId = "openid",
                   ClientName = "openid client",
                   AllowedGrantTypes = GrantTypes.Implicit,
+                  ClientSecrets={ new Secret("secret2".Sha256())},
                   RedirectUris = { "http://localhost:5001/signin-oidc" },
                   PostLogoutRedirectUris = { "http://localhost:5002/signout-callback-oidc" },
 

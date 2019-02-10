@@ -26,6 +26,9 @@ namespace DataAccess.DbContext
         public DbSet<UserEntity> UserEntities { get; set; }
         public DbSet<RoleEntity> RoleEntities { get; set; }
         public DbSet<Client> Clients { get; set; }
+        public DbSet<ClientScope> ClientScopes { get; set; }
+        public DbSet<ClientSecret> ClientSecretses { get; set; }
+        public DbSet<ClientSecret> ClientSecrets { get; set; }
         public DbSet<IdentityResource> IdentityResources { get; set; }
         public DbSet<ApiResource> ApiResources { get; set; }
         public DbSet<PersistedGrant> PersistedGrants { get; set; }
@@ -35,7 +38,7 @@ namespace DataAccess.DbContext
 
         public Task<int> SaveChangesAsync()
         {
-            throw new NotImplementedException();
+          return  base.SaveChangesAsync();
         }
 
         protected override void OnModelCreating(ModelBuilder builder)

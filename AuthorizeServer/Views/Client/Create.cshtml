@@ -1,0 +1,46 @@
+﻿@model AuthorizeServer.ViewModels.ClientViewModel
+<div class="row">
+    <div class="col-md-4">
+        @if (!ViewContext.ModelState.IsValid)
+        {
+            <strong>
+                Error
+            </strong>
+            <div asp-validation-summary="All" class="danger"></div>
+        }
+        <form asp-action="Login" asp-controller="Account" asp-route-url="@ViewData["url"]">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <div class="col-6">
+                    <label class="control-label">客户端标识：</label>
+                    <input asp-for="ClientId" class="form-control" />
+                    <span asp-validation-for="ClientId" class="text-danger"></span>
+                </div>
+                <div class="col-6">
+                    <label class="control-label">客户端名称：</label>
+                    <input asp-for="ClientName" class="form-control" />
+                    <span asp-validation-for="ClientName" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="form-group">
+
+                <div class="col-6">
+                    <label class="control-label">是否启用：</label>
+                    <input asp-for="Enabled" class="form-control"/>
+                </div>
+                <div>
+                    <label class="control-label">是否启用：</label>
+                    <input asp-for="Enabled" class="form-control"/>
+                    <span asp-validation-for="ClientName" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <input type="submit" value="登陆" class="btn btn-default" />
+                <button class="btn btn-default" name="button" value="cancel">取消</button>
+            </div>
+        </form>
+    </div>
+   
+
+</div>

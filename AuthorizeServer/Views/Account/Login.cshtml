@@ -46,7 +46,7 @@
             </div>
         </form>
     </div>
-    @if (Model.ExternalProviders.Any())
+    @if (Model.ExternalProviders!=null&&Model.ExternalProviders.Any())
     {
         <div class="col-md-4">
             <div class="panel panel-default">
@@ -74,9 +74,6 @@
 
 </div>
 
-<div>
-    <a asp-action="Index">Back to List</a>
-</div>
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}

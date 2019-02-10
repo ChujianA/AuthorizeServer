@@ -1,0 +1,60 @@
+﻿<div class="col-xs-12">
+    <div class="box">
+        <div class="box-header">
+            <div class="box-title">
+                <a class="btn btn-default btn-sm" href="/client/create">添加客户端</a>
+            </div>
+        </div>
+        <!-- /.box-header -->
+        <div class="box-body table-responsive no-padding">
+            <table class="table table-bordered">
+                <tbody>
+                    <tr>
+                        <th>标识</th>
+                        <th>名称</th>
+                        <th>授权类型</th>
+                        <th>授权范围</th>
+                        <th>操作</th>
+                    </tr>
+                    <tr v-show="els.length==0">
+                        <td colspan="5">
+                            无数据
+                        </td>
+                    </tr>
+                    <tr v-for="el in els">
+                        <td>
+                            <span v-text="el.clientId"></span>
+                        </td>
+                        <td>
+                            <span v-text="el.clientName"></span>
+                        </td>
+                        <td>
+                            <span v-text="el.allowedGrantTypes"></span>
+                        </td>
+                        <td>
+                            <span v-text="el.allowedScopes"></span>
+                        </td>
+                        <td>
+                            <a class="btn btn-default btn-sm" :href="'/client/' + el.id">详情</a>
+                            <a class="btn btn-default btn-sm" @@click="remove(el.id)">删除</a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <!-- /.box-body -->
+        <div class="box-footer clearfix no-border">
+            <ul id="pagination" v-show="total>size" class="pagination pagination-sm no-margin pull-left"></ul>
+        </div>
+    </div>
+    <!-- /.box -->
+</div>
+
+@section scripts{
+    <environment names="Development">
+        <script src="~/js/client.js" asp-append-version="true"></script>
+    </environment>
+    <environment names="Staging,Production">
+        <script src="~/js/client.min.js" asp-append-version="true"></script>
+    </environment>
+}

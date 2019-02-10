@@ -20,6 +20,12 @@ namespace AuthorizeServer.Controllers
             return View();
         }
 
+        public IActionResult Abount()
+        {
+            ViewData["Message"] = "Application description Page";
+            return View();
+        }
+
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {

@@ -1,19 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
-using AuthorizeServer.Models;
+﻿using AuthorizeServer.Models;
 using AuthorizeServer.ViewModels;
-using DataAccess.IRepositorys;
+using Buiness;
 using DataAccess.Models;
 using IdentityModel;
 using IdentityServer4;
 using IdentityServer4.Services;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace AuthorizeServer.Controllers
 {
@@ -23,14 +24,14 @@ namespace AuthorizeServer.Controllers
         private readonly SignInManager<UserEntity> _signInManager;
         private readonly IIdentityServerInteractionService _interaction;
         private readonly IAuthenticationSchemeProvider _authenticationSchemeProvider;
-        private readonly IClientRepository _clientRepository;
-        public AccountController(UserManager<UserEntity> userManager, SignInManager<UserEntity> signInManager, IIdentityServerInteractionService interaction, IAuthenticationSchemeProvider authenticationSchemeProvider, IClientRepository clientRepository)
+        private readonly IClientBll _clientBll;
+        public AccountController(UserManager<UserEntity> userManager, SignInManager<UserEntity> signInManager, IIdentityServerInteractionService interaction, IAuthenticationSchemeProvider authenticationSchemeProvider, IClientBll clientBll)
         {
             _signInManager = signInManager;
             _userManager = userManager;
             _interaction = interaction;
             _authenticationSchemeProvider = authenticationSchemeProvider;
-            _clientRepository = clientRepository;
+            _clientBll = clientBll;
         }
         #region 注册
         public IActionResult Register()
@@ -99,14 +100,14 @@ namespace AuthorizeServer.Controllers
             var allowLocalLogin = true;
             if (context?.ClientId != null)
             {
-                var client = await _clientRepository.GetClientByClientId(context.ClientId);
+                var client = await _clientBll.GetEnabledClientByClientId(context.ClientId);
                 if (client != null)
                 {
                     allowLocalLogin = client.EnableLocalLogin;
                     if (client.IdentityProviderRestrictions != null && client.IdentityProviderRestrictions.Any())
                     {
                         schemes = schemes.Where(x =>
-                            client.IdentityProviderRestrictions.Select(n => n.Provider)
+                            client.IdentityProviderRestrictions
                                 .Contains(x.AuthenticationScheme)).ToList();
                     }
                 }
@@ -154,8 +155,7 @@ namespace AuthorizeServer.Controllers
             }
             if (AccountConfig.WindowsAuthenticationSchemeName == provider)
             {
-                // return await ProcessWindowsLoginAsync(returnUrl);
-                return Ok();
+                 return await ProcessWindowsLoginAsync(returnUrl);
             }
             else
             {
@@ -170,6 +170,11 @@ namespace AuthorizeServer.Controllers
                 };
                 return Challenge(props, provider);
             }
+        }
+
+        public async  Task<IActionResult> ProcessWindowsLoginAsync(string returnUrl)
+        {
+            return Ok();
         }
 
         /// <summary>
@@ -190,8 +195,29 @@ namespace AuthorizeServer.Controllers
             {
                 user = await AutoCreateUserAsync(provider, providerUserId, claims);
             }
+            var additionalLocalClaims = new List<Claim>();
+            var localSignInProps = new AuthenticationProperties();
+            ProcessLoginCallbackForOidc(authenticateResult, additionalLocalClaims, localSignInProps);
+            ProcessLoginCallbackForWsFed(authenticateResult, additionalLocalClaims, localSignInProps);
+            ProcessLoginCallbackForSaml2p(authenticateResult, additionalLocalClaims, localSignInProps);
+            await HttpContext.SignInAsync(user.Id.ToString(), user.UserName, provider, localSignInProps, additionalLocalClaims.ToArray());
 
-            return Ok();
+            // delete temporary cookie used during external authentication
+            await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+            // retrieve return URL
+            var returnUrl = authenticateResult.Properties.Items["returnUrl"] ?? "~/";
+
+            // check if external login is in the context of an OIDC request
+            var context = await _interaction.GetAuthorizationContextAsync(returnUrl);
+            if (context != null)
+            {
+                if (await _clientBll.IsPkceClientAsync(context.ClientId))
+                {
+                    return Redirect("~/");
+                }
+            }
+
+            return Redirect(returnUrl);
         }
 
         /// <summary>
@@ -214,10 +240,35 @@ namespace AuthorizeServer.Controllers
             }).ToList();
             if (!claimList.Any(x => x.Type == JwtClaimTypes.Name))
             {
-
+                var first = claimList.FirstOrDefault(x => x.Type == JwtClaimTypes.GivenName)?.Value;
+                var last = claimList.FirstOrDefault(x => x.Type == JwtClaimTypes.FamilyName)?.Value;
+                if (first != null && last != null)
+                {
+                    claimList.Add(new Claim(JwtClaimTypes.Name,first+" "+last));
+                }else if (first != null)
+                {
+                    claimList.Add(new Claim(JwtClaimTypes.Name, first));
+                }
+                else if (last != null)
+                {
+                    claimList.Add(new Claim(JwtClaimTypes.Name, last));
+                }
             }
-
-            return new UserEntity();
+            var userEntity = new UserEntity
+            {
+                UserName = claimList.FirstOrDefault(x => x.Type == JwtClaimTypes.Name)?.Value ?? userId
+            };
+            var identityResult =await _userManager.CreateAsync(userEntity);
+            if (!identityResult.Succeeded)
+                throw  new  Exception(identityResult.Errors.Select(x=>x.Description).ToString());
+            identityResult = await  _userManager.AddLoginAsync(userEntity,new UserLoginInfo(provider, userId, userEntity.UserName));
+            if(!identityResult.Succeeded)
+                throw new Exception(identityResult.Errors.Select(x => x.Description).ToString());
+            if(claimList.Any())
+                identityResult = await _userManager.AddClaimsAsync(userEntity,claimList);
+            if (!identityResult.Succeeded)
+                throw new Exception(identityResult.Errors.Select(x => x.Description).ToString());
+            return userEntity;
         }
 
         private async Task<(UserEntity user, string provider, string providerUserId, IEnumerable<Claim> claims)> GetUserFromExternalProvider(AuthenticateResult result)
@@ -234,6 +285,35 @@ namespace AuthorizeServer.Controllers
             var user = await _userManager.FindByLoginAsync(provider, providerUserId);
             return (user, provider, providerUserId, claim);
         }
+
+
+        private void ProcessLoginCallbackForOidc(AuthenticateResult externalResult, List<Claim> localClaims, AuthenticationProperties localSignInProps)
+        {
+            // if the external system sent a session id claim, copy it over
+            // so we can use it for single sign-out
+            var sid = externalResult.Principal.Claims.FirstOrDefault(x => x.Type == JwtClaimTypes.SessionId);
+            if (sid != null)
+            {
+                localClaims.Add(new Claim(JwtClaimTypes.SessionId, sid.Value));
+            }
+
+            // if the external provider issued an id_token, we'll keep it for signout
+            var id_token = externalResult.Properties.GetTokenValue("id_token");
+            if (id_token != null)
+            {
+                localSignInProps.StoreTokens(new[] { new AuthenticationToken { Name = "id_token", Value = id_token } });
+            }
+        }
+
+        private void ProcessLoginCallbackForWsFed(AuthenticateResult externalResult, List<Claim> localClaims, AuthenticationProperties localSignInProps)
+        {
+        }
+
+        private void ProcessLoginCallbackForSaml2p(AuthenticateResult externalResult, List<Claim> localClaims, AuthenticationProperties localSignInProps)
+        {
+        }
+
+
         /// <summary>
         /// 用户登录
         /// </summary>
@@ -241,7 +321,7 @@ namespace AuthorizeServer.Controllers
         /// <param name="url">重定向地址</param>
         /// <returns></returns>
         [HttpPost]
-        public async Task<IActionResult> Login(UserLoginModel model, string url)
+        public async Task<IActionResult> Login(LoginViewModel model, string url)
         {
             //if (ModelState.IsValid)
             //{
@@ -267,9 +347,9 @@ namespace AuthorizeServer.Controllers
                             return Redirect("/");
                     }
                     else
-                        ModelState.AddModelError(nameof(UserLoginModel.Password), "PassWord not exist");
+                        ModelState.AddModelError(nameof(LoginViewModel.Password), "PassWord not exist");
                 }else
-                     ModelState.AddModelError(nameof(UserLoginModel.UserName), "UserName not exist");
+                     ModelState.AddModelError(nameof(LoginViewModel.UserName), "UserName not exist");
             //}
             return View(model);
         }

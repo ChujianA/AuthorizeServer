@@ -1,15 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using AuthorizeServer.Models;
+﻿using AuthorizeServer.Models;
 using Buiness;
-using DataAccess.IRepositorys;
 using IdentityServer4;
 using IdentityServer4.Models;
 using IdentityServer4.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System.Linq;
+using System.Threading.Tasks;
+using AuthorizeServer.ViewModels;
 
 namespace AuthorizeServer.Controllers
 {
@@ -51,7 +49,7 @@ namespace AuthorizeServer.Controllers
             {
                 if (await _clientBll.IsPkceClientAsync(result.ClientId))
                 {
-                   // return View("Redirect", new RedirectViewModel { RedirectUrl = result.RedirectUri });
+                    return View("Redirect", new RedirectViewModel { RedirectUrl = result.RedirectUri });
                 }
 
                 return Redirect(result.RedirectUri);
@@ -134,7 +132,7 @@ namespace AuthorizeServer.Controllers
             var context = await _interaction.GetAuthorizationContextAsync(returnUrl);
             if (context != null)
             {
-                var client =await _clientBll.GetClientByClientId(context.ClientId);
+                var client =await _clientBll.GetEnabledClientByClientId(context.ClientId);
                 if (client != null)
                 {
                     var resources =await _resourcesBll.FindResourcesByScopeAsync(context.ScopesRequested);
@@ -180,7 +178,6 @@ namespace AuthorizeServer.Controllers
                 ClientName = client.ClientName ?? client.ClientId,
                 ClientUrl = client.ClientUri,
                 ClientLogoUrl = client.LogoUri,
-                AllowRememberConsent = client.AllowRememberConsent,
                 IdentityScopes = resources.IdentityResources
                     .Select(x => CreateScopeViewModel(x, model != null || scopesConsented.Contains(x.Name))).ToArray(),
                 ResourceScopes = resources.ApiResources.SelectMany(x => x.Scopes).Select(y =>
